@@ -1,0 +1,88 @@
+import cv2
+import numpy as np
+from google.colab.patches import cv2_imshow
+
+# Load the image
+image = cv2.imread('lava20.jpg')
+cv2_imshow(image)
+hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+cv2_imshow(hsv)
+
+pixels = hsv.reshape((-1, 3))
+
+# Convert to float32
+pixels = np.float32(pixels)
+
+# Define criteria and apply kmeans()
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
+k = 4  # You can adjust the number of clusters (k) as needed
+
+_, labels, centers = cv2.kmeans(pixels, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+# Convert back to 8-bit values
+centers = np.uint8(centers)
+segmented_image = centers[labels.flatten()]
+
+# Reshape back to the original image shape
+segmented_image = segmented_image.reshape(image.shape)
+cv2_imshow(segmented_image)
+
+lower_color = np.array([0, 100, 100])  # Adjust these values based on the color you want
+upper_color = np.array([30, 255, 255])  # Adjust these values based on the color you want
+
+# Create a mask using the inRange function to extract the desired color
+color_mask = cv2.inRange(segmented_image, lower_color, upper_color)
+
+# Apply the mask to the segmented image to extract the desired color segments
+color_segments = cv2.bitwise_and(segmented_image, segmented_image, mask=color_mask)
+cv2_imshow(color_mask)
+cv2_imshow(color_segments)
+
+_, binary_image = cv2.threshold(color_mask, 127, 255, cv2.THRESH_BINARY)
+kernel = np.ones((5, 5), np.uint8)
+color_mask = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, kernel)
+color_mask = cv2.morphologyEx(color_mask, cv2.MORPH_OPEN, kernel)
+color_segments = cv2.bitwise_and(segmented_image,segmented_image, mask = color_mask)
+cv2_imshow(color_segments)
+
+contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+num_r=0
+# Set the minimum area threshold
+thresh_min_area = 400  # Adjust this value based on your
+for contour in contours:
+    area = cv2.contourArea(contour)
+    if area > thresh_min_area:
+        num_r += 1
+
+filled = np.zeros((h,w,3), dtype = np.uint8)
+
+
+h,w,_ = image.shape
+if num_r > 1:
+    r_img = filled
+else:
+  l_contour = max(range(len(contours)), key=lambda i: cv2.contourArea(contours[i]))
+
+  cv2.drawContours(filled, [contours[l_contour]], 0, (255, 255, 255), thickness = cv2.FILLED)
+  r_img = filled
+cv2_imshow(r_img)
+
+h,w,_ = image.shape
+
+contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+# Find the index of the largest contour
+largest_contour_index = max(range(len(contours)), key=lambda i: cv2.contourArea(contours[i]))
+
+
+# Create an empty mask
+empty = np.zeros((h, w, 3), dtype= np.uint8)
+
+result_image = cv2.drawContours(empty, [contours[largest_contour_index]], 0, (255, 255, 255), thickness = cv2.FILLED)
+
+# # Fill the largest contour with white color using fillPoly
+# cv2.fillPoly(mask, [contours[largest_contour_index]], 255)
+
+# # Fill the largest contour with white color
+# result_image = cv2.bitwise_and(filled_image, filled_image, mask=mask)
+cv2_imshow(result_image)
