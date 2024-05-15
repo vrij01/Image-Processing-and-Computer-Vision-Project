@@ -1,0 +1,146 @@
+import cv2
+import numpy as np
+from google.colab.patches import cv2_imshow
+
+image = cv2.imread('r5.jpg')
+# Convert the image to grayscale
+gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Threshold to create a binary mask of non-white regions
+_, binary_mask = cv2.threshold(gray_image, 240, 255, cv2.THRESH_BINARY_INV)
+
+# Find contours in the binary mask
+contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+# Filter contours based on area to exclude noise
+min_contour_area = 100  # Adjust as needed
+filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
+
+# Draw rectangles around non-white regions
+result_image = image.copy()
+for cnt in filtered_contours:
+    x, y, w, h = cv2.boundingRect(cnt)
+    cv2.rectangle(result_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+print(len(filtered_contours))
+if len(filtered_contours) >1:
+  print("fake")
+# Display or save the result
+cv2_imshow(result_image)
+
+for i, cnt in enumerate(filtered_contours):
+    x, y, w, h = cv2.boundingRect(cnt)
+    cropped_region = image[y:y + h, x:x + w]
+
+    # Save or display the cropped region
+    cv2_imshow(cropped_region)
+h,w,_=cropped_region.shape
+uh = cropped_region[0:h//2-2,:]
+cv2_imshow(uh)
+
+hsv_image = cv2.cvtColor(uh, cv2.COLOR_BGR2HSV)
+cv2_imshow(hsv_image)
+# Define the lower and upper bounds for skin color in HSV
+lower_skin = np.array([0, 95, 80], dtype=np.uint8)
+upper_skin = np.array([20,160,255], dtype=np.uint8)
+
+# Create a binary mask for the skin color
+skin_mask = cv2.inRange(hsv_image, lower_skin, upper_skin)
+
+# Apply the mask to the original image
+skin_detect = cv2.bitwise_and(uh, uh, mask=skin_mask)
+
+cv2_imshow(skin_detect)
+
+contours, _ = cv2.findContours(skin_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filter contours based on area
+min_contour_area = 55
+filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
+
+    # Draw contours on the original image
+r_image = uh.copy()
+cv2.drawContours(r_image, filtered_contours, -1, (0, 255, 0), 2)
+
+cv2_imshow(r_image)
+
+    # Print the number of contours
+total_contours = len(filtered_contours)
+print(f'Number of contours: {total_contours}')
+
+w1 = uh.shape[1]
+print(w1)
+ulh = uh[:,0:w//2-1]
+cv2_imshow(ulh)
+
+hsv_image1 = cv2.cvtColor(ulh, cv2.COLOR_BGR2HSV)
+cv2_imshow(hsv_image1)
+# Define the lower and upper bounds for skin color in HSV
+lower_skin = np.array([0, 95, 80], dtype=np.uint8)
+upper_skin = np.array([20,160,255], dtype=np.uint8)
+
+# Create a binary mask for the skin color
+skin_mask1 = cv2.inRange(hsv_image1, lower_skin, upper_skin)
+
+# Apply the mask to the original image
+skin_detect1 = cv2.bitwise_and(ulh, ulh, mask=skin_mask1)
+
+cv2_imshow(skin_detect1)
+
+contours, _ = cv2.findContours(skin_mask1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filter contours based on area
+min_contour_area = 55
+filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
+
+    # Draw contours on the original image
+r_image1 = ulh.copy()
+cv2.drawContours(r_image1, filtered_contours, -1, (0, 255, 0), 2)
+
+cv2_imshow(r_image1)
+
+    # Print the number of contours
+left_h = len(filtered_contours)
+print(f'Number of contours: {left_h}')
+w2 = uh.shape[1]
+print(w2)
+urh = uh[:,w2//2-10:w2]
+cv2_imshow(urh)
+hsv_image2 = cv2.cvtColor(urh, cv2.COLOR_BGR2HSV)
+cv2_imshow(hsv_image2)
+# Define the lower and upper bounds for skin color in HSV
+lower_skin = np.array([0, 95, 80], dtype=np.uint8)
+upper_skin = np.array([20,160,255], dtype=np.uint8)
+
+# Create a binary mask for the skin color
+skin_mask2 = cv2.inRange(hsv_image2, lower_skin, upper_skin)
+
+# Apply the mask to the original image
+skin_detect2 = cv2.bitwise_and(urh, urh, mask=skin_mask2)
+
+cv2_imshow(skin_detect2)
+contours, _ = cv2.findContours(skin_mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filter contours based on area
+min_contour_area = 55
+filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
+
+    # Draw contours on the original image
+r_image2 = urh.copy()
+cv2.drawContours(r_image2, filtered_contours, -1, (0, 255, 0), 2)
+
+cv2_imshow(r_image2)
+
+    # Print the number of contours
+right_h = len(filtered_contours)
+print(f'Number of contours: {right_h}')
+
+if total_contours==10 and left_h==5 and right_h==6:
+  print("real")
+else:
+  print("fake")
+
+
+
+
+
